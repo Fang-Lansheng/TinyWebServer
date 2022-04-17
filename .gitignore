@@ -1,0 +1,10 @@
+# Files from system or IDE
+.DS_Store
+.idea
+cmake-build*
+CMakeLists.txt
+
+# Generated files
+logs
+DatabaseInfo.txt
+bin
