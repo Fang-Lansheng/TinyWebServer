@@ -7,7 +7,7 @@ OBJS = ../src/log/*.cpp ../src/pool/*.cpp ../src/timerheap/*.cpp \
        ../src/config/*.cpp ../src/main.cpp
 
 all: $(OBJS)
-	$(CXX) $(CFLAGS) $(OBJS) -o ../bin/$(TARGET)  -pthread -lmysqlclient
+	$(CXX) $(CFLAGS) $(OBJS) -o ../bin/$(TARGET) -pthread -lmysqlclient
 
 clean:
 	rm -rf ../bin/$(OBJS) $(TARGET)

@@ -242,7 +242,7 @@ bool HttpRequest::UserVerify(const std::string &username,
         flag = true;
     }
 
-    snprintf(order, 256, "SELECT username, passwd "
+    snprintf(order, 256, "SELECT username, password "
                          "FROM user WHERE USERNAME='%s' LIMIT 1",
                          username.c_str());
     LOG_DEBUG("%s", order);
