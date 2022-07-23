@@ -103,6 +103,7 @@ void TimerHeap::Delete(size_t index) {
             ShiftUp(i);
         }
     }
+
     // Remove the node at the end of TimerHeap
     ref_.erase(heap_.back().id);
     heap_.pop_back();

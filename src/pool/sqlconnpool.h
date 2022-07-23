@@ -25,6 +25,8 @@ public:
 
     size_t GetFreeConnCount();
 
+    // Database connections pool initialization.
+    // Add a MYSQL* connection handler to the connection queue.
     void Init(const char* host, int port,
               const char* user, const char* passwd,
               const char* database_name,
@@ -33,15 +35,20 @@ public:
     void ClosePool();
 
 private:
-
+    // ctor
     SqlConnPool();
 
+    // dtor
     ~SqlConnPool();
 
+private:
+    // Max number of MySQL connections.
     size_t MAX_CONN_{};
 
+    // Number of connections.
     int use_count_;
 
+    //
     int free_count_;
 
     std::queue<MYSQL*> conn_queue_;

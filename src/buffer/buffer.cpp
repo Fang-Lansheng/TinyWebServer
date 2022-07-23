@@ -4,7 +4,8 @@
 
 #include "buffer.h"
 
-Buffer::Buffer(int init_buffer_size): buffer_(init_buffer_size), read_pos_(0), write_pos_(0) {
+Buffer::Buffer(int init_buffer_size)
+    : buffer_(init_buffer_size), read_pos_(0), write_pos_(0) {
 }
 
 size_t Buffer::WritableBytes() const {
@@ -133,7 +134,8 @@ void Buffer::MakeSpace(size_t len) {
         buffer_.resize(write_pos_ + len + 1);
     } else {
         size_t readable = ReadableBytes();
-        std::copy(BeginPtr() + read_pos_, BeginPtr() + write_pos_, BeginPtr());
+        std::copy(BeginPtr() + read_pos_, BeginPtr() + write_pos_,
+                  BeginPtr());
         read_pos_ = 0;
         write_pos_ = read_pos_ + readable;
         assert(readable == ReadableBytes());

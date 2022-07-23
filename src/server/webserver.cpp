@@ -45,23 +45,29 @@
 
 
 WebServer::WebServer(const Config& config, const DatabaseInfo& db_info):
-    port_(config.port), open_linger_(config.opt_linger), timeout_(config.timeout),
-    is_close_(false), timer_(new TimerHeap()),
-    thread_pool_(new ThreadPool(config.thread_num)), epoller_(new Epoller()) {
+    port_(config.port), open_linger_(config.opt_linger),
+    timeout_(config.timeout), is_close_(false), timer_(new TimerHeap()),
+    thread_pool_(new ThreadPool(config.thread_num)),
+    epoller_(new Epoller()) {
 
+    // get the absolute pathname of the current working directory
     src_dir_ = getcwd(nullptr, 256);
     assert(src_dir_);
     strncat(src_dir_, "/assets", 16);
 
     HttpConn::user_count = 0;
     HttpConn::src_dir = src_dir_;
+
     SqlConnPool::Instance()->Init("localhost", db_info.db_port,
                                   db_info.db_user.c_str(),
                                   db_info.db_passwd.c_str(),
                                   db_info.db_name.c_str(),
                                   config.conn_pool_num);
 
+    // Initialize the event mode
     InitEventMode(config.trigger_mode);
+
+    // Initialize the socket
     if (!InitSocket()) {
         is_close_ = true;
     }
@@ -103,16 +109,31 @@ void WebServer::Start() {
     }
     while (!is_close_) {
         if (timeout_ > 0) {
+            // Ensure that the server does not wait too long
+            // or too short for events
             milliseconds = timer_->GetNextTick();
         }
+
+        // call `epoll_wait()` and wait for the next event.
         int event_count = epoller_->Wait(milliseconds);
+
         for (int i = 0; i < event_count; ++i) {
             int fd = epoller_->GetEventFd(i);
             uint32_t events = epoller_->GetEvents(i);
+
+            // bit-mask values for the epoll events field
+            // bit        | Description
+            // ---------- | -----------
+            // EPOLLRDHUP | Shutdown on peer socket
+            // EPOLLHUP   | A hangup has occurred
+            // EPOLLERR   | An error has occurred
+            // EPOLLIN    | Data other than high-priority data can be read
+            // EPOLLOUT   | Normal data can be written
+
+            assert(users_.count(fd) > 0);
             if (fd == listen_fd_) {
                 DealListen();
             } else if (events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
-                assert(users_.count(fd) > 0);
                 CloseConn(&users_[fd]);
             } else if (events & EPOLLIN) {
                 assert(users_.count(fd) > 0);
@@ -128,6 +149,7 @@ void WebServer::Start() {
 }
 
 bool WebServer::InitSocket() {
+    // An Internet socket address
     struct sockaddr_in addr{};
     if (port_ > 65535 || port_ < 1024) {
         LOG_ERROR("Port %d is out of bound!", port_);
@@ -137,10 +159,11 @@ bool WebServer::InitSocket() {
     addr.sin_addr.s_addr = htonl(INADDR_ANY);   // Address to accept any incoming messages
     addr.sin_port = htons(port_);
 
+    // Manipulate the SO_LINGER option
     struct linger opt_linger = {0};
     if (open_linger_) {
         opt_linger.l_onoff = 1;                 // Nonzero to linger on close
-        opt_linger.l_linger = 1;
+        opt_linger.l_linger = 1;                // Time to linger
     }
 
     // Create a new socket of type `SOCK_STREAM` in domain `AF_INET`
@@ -214,7 +237,7 @@ void WebServer::InitEventMode(int trigger_mode) {
         case 0:
             break;
         case 1:
-            conn_event_ |= EPOLLET;
+            conn_event_ |= EPOLLET;     // edge-triggered event notification
             break;
         case 2:
             listen_event_ |= EPOLLET;
@@ -261,6 +284,10 @@ void WebServer::DealListen() {
     struct sockaddr_in addr{};
     socklen_t len = sizeof(addr);
     do {
+        // Await a connection on socket FD (listen_fd_)
+        // When a connection arrives, open a new socket to communicate with it,
+        // set *addr (which is *len bytes long) to the address of the connecting
+        // peer, and return the new socket's descriptor, or -1 for errors.
         int fd = accept(listen_fd_, (struct sockaddr*)&addr, &len);
         if (fd <= 0) {
             return;
@@ -320,7 +347,7 @@ void WebServer::OnWrite(HttpConn* client) {
         }
     } else if (ret < 0) {
         if (write_errno == EAGAIN) {
-            // continue transporting
+            // Continue transporting
             epoller_->ModFd(client->GetFd(), conn_event_ | EPOLLOUT);
             return;
         }
@@ -330,8 +357,10 @@ void WebServer::OnWrite(HttpConn* client) {
 
 void WebServer::OnProcess(HttpConn* client) {
     if (client->Process()) {
+        // Write
         epoller_->ModFd(client->GetFd(), conn_event_ | EPOLLOUT);
     } else {
+        // Read
         epoller_->ModFd(client->GetFd(), conn_event_ | EPOLLIN);
     }
 }

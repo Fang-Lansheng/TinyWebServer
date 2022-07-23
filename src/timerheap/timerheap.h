@@ -22,10 +22,17 @@ typedef std::chrono::milliseconds MS;
 typedef Clock::time_point TimeStamp;
 
 
+// Timer
 struct TimerNode {
-    int                 id;
-    TimeStamp           expires;
-    TimeoutCallback     callback;
+    // A unique identifier
+    int id;
+
+    // Expiration time of the timer
+    TimeStamp expires;
+
+    // The callback function, used to close the corresponding
+    // HTTP connection when deleting the timer.
+    TimeoutCallback callback;
 
     bool operator<(const TimerNode& t) const {
         return expires < t.expires;
@@ -33,22 +40,25 @@ struct TimerNode {
 };
 
 
+// A min-heap of timer.
 class TimerHeap {
 public:
+    // ctor
     TimerHeap();
 
+    // dtor
     ~TimerHeap();
 
-    // Modify a `TimerNode`
+    // Modify the timer specified by `id` and update its expiration time.
     void Adjust(int id, int timeout);
 
-    // Add a `TimerNode`
+    // Add a timer.
     void Add(int id, int timeout, const TimeoutCallback& callback);
 
-    // Remove a `TimerNode` and trigger the callback function
+    // Remove a timer and trigger its callback function
     void Remove(int id);
 
-    // Clear the heap
+    // Clear the heap.
     void Clear();
 
     // Clean the expired nodes
@@ -57,6 +67,8 @@ public:
     // Pop out the first node in the heap
     void Pop();
 
+    // Returns the difference between the expiration time of the
+    // connection at the top of heap and the current time.
     int GetNextTick();
 
 
@@ -64,15 +76,20 @@ private:
     // Delete an node
     void Delete(size_t index);
 
+    // Shift up operation of heap.
     void ShiftUp(size_t index);
 
+    // Shift down operation of heap.
     bool ShiftDown(size_t index, size_t n);
 
-    // Swap two nodes
+    // Swap two nodes.
     void SwapNode(size_t index1, size_t index2);
 
+private:
+    // The storage entity of the timers.
     std::vector<TimerNode> heap_;
 
+    // The mapping from the timer to its position in the min-heap.
     std::unordered_map<int, size_t> ref_;
 };
 

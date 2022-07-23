@@ -61,6 +61,11 @@ void SqlConnPool::Init(const char* host, int port,
                       "insufficient memory to allocate a new object");
             assert(sql);
         }
+
+        // attempts to establish a connection to a MySQL server running
+        // on host. Client programs must successfully connect to a server
+        // before executing any other API functions that require a valid
+        // MYSQL connection handler structure.
         sql = mysql_real_connect(sql, host, user, passwd, database_name,
                                  port, nullptr, 0);
         if (!sql) {

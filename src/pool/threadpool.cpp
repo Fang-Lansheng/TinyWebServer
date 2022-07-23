@@ -4,23 +4,29 @@
 
 #include "threadpool.h"
 
-ThreadPool::ThreadPool(size_t threat_count):
-    pool_(std::make_shared<Pool>()) {
+ThreadPool::ThreadPool(size_t threat_count): pool_(std::make_shared<Pool>()) {
     assert(threat_count > 0);
     for (size_t i = 0; i < threat_count; ++i) {
-        // FIX IT: Initialized lambda captures are a C++14 extension
         std::thread([pool = pool_] {
+            // Get the locker of the thread pool
             std::unique_lock<std::mutex> locker(pool->mutex);
+
+            // The tasks in the queue are processed in sequence
+            // until the thread pool is closed.
             while (true) {
                 if (!pool->tasks.empty()) {
+                    // Fetch a task from the head of the queue.
                     auto task = std::move(pool->tasks.front());
                     pool->tasks.pop();
+
+                    // Process the task.
                     locker.unlock();
                     task();
                     locker.lock();
                 } else if (pool->is_closed) {
                     break;
                 } else {
+                    // keep waiting if the tasks queue is empty.
                     pool->cond.wait(locker);
                 }
             }
@@ -38,7 +44,7 @@ ThreadPool::~ThreadPool() {
     }
 }
 
-ThreadPool::ThreadPool(ThreadPool &&) noexcept = default;
+ThreadPool::ThreadPool(ThreadPool&&) noexcept = default;
 
 ThreadPool::ThreadPool() = default;
 

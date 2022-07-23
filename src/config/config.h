@@ -43,7 +43,8 @@ public:
     // Num of connection in database connection pool. Default: 12.
     size_t conn_pool_num;
 
-    // Num of thread in thread pool. Default: 6.
+    // Num of thread in thread pool. Default: 4
+    // (my Linux server has a CPU with 2 cores and 2 threads per core).
     int thread_num;
 
     // Weather to open log. Default: 1 (true).

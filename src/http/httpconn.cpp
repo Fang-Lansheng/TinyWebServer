@@ -101,22 +101,29 @@ sockaddr_in HttpConn::GetAddr() const {
 }
 
 bool HttpConn::Process() {
+    // HTTP requester initialization
     request_.Init();
     if (read_buffer_.ReadableBytes() <= 0) {
         return false;
     } else if (request_.Parse(read_buffer_)) {
+        // Parse the HTTP request and initialize the responser
         LOG_DEBUG("%s", request_.Path().c_str());
         response_.Init(src_dir, request_.Path(), request_.IsKeepAlive(), 200);
     } else {
         response_.Init(src_dir, request_.Path(), false, 400);
     }
 
+    // Generate the HTTP response and put it into the write buffer
     response_.MakeResponse(write_buffer_);
-    // response head
+
+    // Response head
+    // `iov_base` is the pointer to data.
     iov_[0].iov_base = const_cast<char*>(write_buffer_.Peek());
+    // `iov_len` is the length of data.
     iov_[0].iov_len = write_buffer_.ReadableBytes();
     iov_count_ = 1;
-    // files
+
+    // Files
     if (response_.FileLength() > 0 && response_.File()) {
         iov_[1].iov_base = response_.File();
         iov_[1].iov_len = response_.FileLength();

@@ -99,7 +99,8 @@ size_t HttpResponse::FileLength() const {
     return mm_file_stat_.st_size;
 }
 
-void HttpResponse::ErrorContent(Buffer &buffer, std::string message) {
+void HttpResponse::ErrorContent(Buffer &buffer,
+                                const std::string& message) const {
     std::string body;
     std::string status;
 

@@ -120,7 +120,7 @@ bool HttpRequest::ParseRequestLine(const std::string &line) {
         parse_state_ = HEADERS;
         return true;
     } else {
-        LOG_ERROR("HTTP request line error");
+        LOG_ERROR("An error occurred when parsing HTTP Request-Line");
         return false;
     }
 }

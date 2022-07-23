@@ -10,7 +10,7 @@ Config::Config() {
     timeout = 60000;
     opt_linger = 1;
     conn_pool_num = 12;
-    thread_num = 6;
+    thread_num = 4;
     open_log = 1;
     log_level = 3;
     log_queue_size = 1024;
